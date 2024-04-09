@@ -161,6 +161,7 @@ if __name__ == '__main__':
     team2 = "Team2"
 
     for i, client in enumerate(clients):
+        time.sleep(3)
         team = team1 if i < 2 else team2
         player_name = f"Player{i+1}"
         
@@ -174,11 +175,11 @@ if __name__ == '__main__':
             'player_name': player_name
         }
         client.publish("new_game", json.dumps(new_player))
-        
+        time.sleep(3)
         thread = threading.Thread(target=client.loop_forever)
         thread.start()
 
-    time.sleep(1)
+    time.sleep(3)
     clients[0].publish(f"games/{lobby_name}/start", "START")
 
     while True:
@@ -190,4 +191,4 @@ if __name__ == '__main__':
             move = random.choice(moves)
             client.publish(f"games/{lobby_name}/{player_name}/move", move)
         
-        time.sleep(1)
+        time.sleep(3) 
