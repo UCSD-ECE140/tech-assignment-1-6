@@ -1,5 +1,6 @@
 import os
 import json
+import threading
 from dotenv import load_dotenv
 
 import paho.mqtt.client as paho
@@ -65,7 +66,7 @@ if __name__ == '__main__':
     username = os.environ.get('USER_NAME')
     password = os.environ.get('PASSWORD')
 
-    client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="Player1", userdata=None, protocol=paho.MQTTv5)
+    client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="Player", userdata=None, protocol=paho.MQTTv5)
     
     # enable TLS for secure connection
     client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
@@ -79,39 +80,27 @@ if __name__ == '__main__':
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
     client.on_publish = on_publish # Can comment out to not print when publishing to topics
-
-    print("Got here now")
-    lobby_name = "rip"
-    player_name1 = "Player1"
-    player_name2 = "Player2"
-    player_name3 = "Player3"
     
+    lobby_name = "FirstLobby"
+    player_name = "Player1"
+
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f"games/{lobby_name}/+/game_state")
     client.subscribe(f"games/{lobby_name}/scores")
-
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                            'team_name':'ATeam',
-                                            'player_name' : player_name1}))
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                            'team_name':'TeamB',
-                                            'player_name' : player_name2}))
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                            'team_name':'TeamB',
-                                            'player_name' : player_name3}))
     
-    print("Got here now")   
-    # delay to allow for subscription
-    time.sleep(.5)
-    #starting
+    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
+                                            'team_name':'Player',
+                                            'player_name':player_name}))
+    # this is boarderline insanity
+    threadripper = threading.Thread(target=client.loop_forever)
+    threadripper.start()
+    
+    # THIS IS HORRIBLE WHY DO WE HAVE TO WAIT, THEY SHOULD HAVE TOLD US THIS
+    time.sleep(1)
     client.publish(f"games/{lobby_name}/start", "START")
-    client.publish(f"games/{lobby_name}/{player_name1}/move", "UP")
-    client.publish(f"games/{lobby_name}/{player_name2}/move", "UP")
-    client.publish(f"games/{lobby_name}/{player_name3}/move", "DOWN")
     
-    #cooldown time
-    time.sleep(.5)
-    #stopping
-    client.publish(f"games/{lobby_name}/start", "STOP")
-    client.loop_forever()
-
+    while True:
+        time.sleep(1)
+        moving = input("Moving: ")
+        client.publish(f"games/{lobby_name}/{player_name}/move", moving)
+    
